@@ -2,48 +2,65 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
 )
 
-func loadFiles(buf *strings.Builder, root string, ignore func(path string, isDir bool) bool) {
-	root = strings.TrimSuffix(root, "/")
+type item struct {
+	relPath string
+	content []byte
+}
 
-	ensure(filepath.Walk(root, func(fn string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			if ignore(fn, true) {
-				log.Printf("ignore: %s/", fn)
-				return filepath.SkipDir
+func loadFiles(rootDirs []string, ignore func(path string, isDir bool) bool) (matched []*item, ignored []string) {
+	for _, rootDir := range rootDirs {
+		rootDir = strings.TrimSuffix(rootDir, "/")
+		ensure(filepath.Walk(rootDir, func(fn string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
 			}
-			return nil
-		}
-		if ignore(fn, false) {
-			log.Printf("ignore: %s", fn)
-			return nil
-		}
+			if info.IsDir() {
+				if ignore(fn, true) {
+					ignored = append(ignored, fn+"/")
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if ignore(fn, false) {
+				ignored = append(ignored, fn)
+				return nil
+			}
 
-		data := must(os.ReadFile(fn))
-		if len(data) == 0 {
-			return nil
-		}
-		if !utf8.Valid(data) {
-			return nil
-		}
-		data = bytes.TrimSpace(data) // mostly for trailing whitespace
+			content := must(os.ReadFile(fn))
+			if len(content) == 0 {
+				return nil
+			}
+			if !utf8.Valid(content) {
+				return nil
+			}
 
+			matched = append(matched, &item{
+				relPath: computeRelPath(fn, rootDir),
+				content: content,
+			})
+			return nil
+		}))
+	}
+	return
+}
+
+func formatItems(items []*item) string {
+	var buf strings.Builder
+	for _, item := range items {
 		buf.WriteString("=#=#= ")
-		buf.WriteString(computeRelPath(fn, root))
+		buf.WriteString(item.relPath)
 		buf.WriteString("\n")
-		buf.Write(data)
+		buf.Write(bytes.TrimSpace(item.content))
 		buf.WriteString("\n\n")
-		return nil
-	}))
+	}
+	buf.WriteString("=#=#= END\n\n")
+	return buf.String()
 }
 
 func computeRelPath(path, root string) string {

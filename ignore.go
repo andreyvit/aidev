@@ -2,36 +2,69 @@ package main
 
 import (
 	"path/filepath"
-	"regexp"
+	"strings"
 )
 
 type Ignorer struct {
+	Include []string
+	Exclude []string
 }
 
 func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 	if path == "." {
 		return false
 	}
+
 	_, name := filepath.Split(path)
-	if ignoredNames[name] {
+	if strings.Contains(name, ".draft.") {
 		return true
 	}
-	if ignoredRe.MatchString(name) {
+
+	incl := match(name, ign.Include)
+	excl := match(name, ign.Exclude)
+
+	if len(ign.Include) > 0 && incl == 0 {
 		return true
 	}
-	if isDir && ignoredDirRe.MatchString(name) {
+	if excl > 0 && excl >= incl {
+		// in case of -i and -x conflict, longest pattern wins
 		return true
 	}
+
+	if incl == 0 {
+		if isDir && match(name, standardDirExcludes) > 0 {
+			return true
+		}
+		if match(name, standardExcludes) > 0 {
+			return true
+		}
+	}
+
 	return false
 }
 
-func newIgnorer() *Ignorer {
-	return &Ignorer{}
+func match(path string, list []string) int {
+	var score int
+	for _, item := range list {
+		if must(filepath.Match(item, path)) {
+			if len(item) > score {
+				score = len(item)
+			}
+		}
+	}
+	return score
 }
 
-var ignoredRe = regexp.MustCompile(`~`)
-var ignoredDirRe = regexp.MustCompile(`^\.`)
+var standardExcludes = []string{
+	"go.sum",
+	".env*",
+	"~*",
+	".gitignore",
+}
 
-var ignoredNames = map[string]bool{
-	"node_modules": true,
+var standardDirExcludes = []string{
+	".git",
+	".svn",
+	".*",
+	"node_modules",
 }

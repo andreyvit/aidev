@@ -1,19 +1,28 @@
 package main
 
 import (
+	"context"
+	_ "embed"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/andreyvit/openai"
 )
 
 // You are an AI programming assistant. User will send all files from a Git repository, separated by =#=#= headers, followed by a change request. Implement the requested change and output the modified files in the same format.
 
-// var (
-// 	openAICreds openai.Credentials
-// )
+var (
+	openAICreds openai.Credentials
+)
+
+//go:embed prompt.txt
+var systemPrompt string
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -22,36 +31,141 @@ func main() {
 	//env.Var("OPENAI_API_KEY", required, envloader.StringVar(&openAICreds.APIKey), "OpenAI API key")
 
 	var (
-		envFile string
-		outFile string
+		envFile  string
+		rootDirs []string
+		include  []string
+		exclude  []string
+		codeFile string
+		respFile string
+		replay   bool
+		prompt   string
+		model    string = openai.ModelChatGPT4
 	)
 	flag.Usage = usage
 	flag.StringVar(&envFile, "conf", "", "load environment variables from this file")
-	flag.StringVar(&outFile, "o", "", "file name to save results to instead of printing to stdout")
+	flag.StringVar(&codeFile, "C", "", "file name to save combined code to (- for stdout, copy for clipboard)")
+	flag.StringVar(&prompt, "p", "", "prompt to execute")
+	flag.StringVar(&respFile, "R", "", "file name ot save ChatGPT response to (- for stdout, copy for clipboard)")
+	flag.BoolVar(&replay, "replay", false, "replay response from response file (if any) instead of obtaining new one")
+	flag.Var((*stringList)(&rootDirs), "d", "add code directory (defaults to ., can specify multiple times)")
+	flag.Var((*stringList)(&include), "i", "include only this glob pattern (can specify multiple times)")
+	flag.Var((*stringList)(&exclude), "x", "exclude this glob pattern (can specify multiple times, in case of conflict with -i longest pattern wins)")
+	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT4}, "gpt4", "use GPT-4")
+	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT4With32k}, "gpt4-32k", "use GPT-4 32k")
+	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT35Turbo}, "gpt35", "use GPT 3.5")
 	flag.Parse()
 
 	if envFile != "" && envFile != "none" {
 		loadEnv(envFile)
 	}
 
-	ign := newIgnorer()
-
-	args := flag.Args()
-	if len(args) == 0 {
-		args = []string{"."}
+	openAICreds = openai.Credentials{
+		APIKey:         needEnv("OPENAI_API_KEY"),
+		OrganizationID: os.Getenv("OPENAI_ORG"),
 	}
 
-	var buf strings.Builder
-	for _, rootDir := range args {
-		loadFiles(&buf, rootDir, ign.ShouldIgnore)
+	if len(rootDirs) == 0 {
+		rootDirs = []string{"."}
 	}
-	buf.WriteString("=#=#= END\n\n")
 
-	output := buf.String()
-	if outFile != "" {
-		ensure(os.WriteFile(outFile, []byte(output), 0644))
-	} else {
-		fmt.Println(output)
+	ign := &Ignorer{
+		Include: include,
+		Exclude: exclude,
+	}
+
+	items, ignored := loadFiles(rootDirs, ign.ShouldIgnore)
+	if len(ignored) > 0 {
+		log.Printf("%d ignored:", len(ignored))
+		for _, path := range ignored {
+			log.Printf("\t%s", path)
+		}
+	}
+	log.Printf("%d files matched:", len(items))
+	for _, item := range items {
+		log.Printf("\t%s", item.relPath)
+	}
+
+	code := formatItems(items)
+	if codeFile != "" {
+		ensure(saveText(codeFile, code))
+	}
+
+	opt := openai.DefaultChatOptions()
+	opt.Model = model
+	opt.MaxTokens = 512
+	opt.Temperature = 0.7
+
+	chat := []openai.Msg{
+		openai.SystemMsg(systemPrompt),
+		openai.UserMsg(fmt.Sprintf("%s\n\n%s", strings.TrimSpace(code), strings.TrimSpace(prompt))),
+	}
+
+	tokens := openai.ChatTokenCount(chat, opt.Model)
+	limit := openai.MaxTokens(opt.Model)
+	if tokens+opt.MaxTokens > limit {
+		log.Printf("** prompt resulted in %d tokens, %d tokens including completion, max for %s is %d tokens.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
+		os.Exit(1)
+	}
+
+	if prompt == "" {
+		log.Printf("no prompt specified, nothing to do")
+		os.Exit(0)
+	}
+
+	httpClient := &http.Client{
+		Timeout: 2 * time.Minute,
+	}
+
+	var response string
+
+	if replay && respFile != "" && respFile != "-" {
+		response = string(mustSkippingOSNotExists(os.ReadFile(respFile)))
+	}
+
+	if response == "" {
+		msg, usage, err := openai.Chat(context.Background(), chat, openai.Options{
+			Model:            model,
+			MaxTokens:        2048,
+			Temperature:      0.7,
+			TopP:             0,
+			N:                0,
+			BestOf:           0,
+			Stop:             []string{},
+			PresencePenalty:  0,
+			FrequencyPenalty: 0,
+		}, httpClient, openAICreds)
+		if err != nil {
+			log.Fatalf("** %v", err)
+		}
+
+		response = msg[0].Content
+		if respFile != "" {
+			saveText(respFile, response)
+		}
+
+		cost := openai.Cost(usage.PromptTokens, usage.CompletionTokens, opt.Model)
+		log.Printf("OpenAI cost: %v (prompt = %d [vs estimated %d], completion = %d)", cost, usage.PromptTokens, tokens, usage.CompletionTokens)
+	}
+
+	log.Printf("len(response) = %d", len(response))
+
+	respItems, unfinished := parseItems(response)
+	if unfinished {
+		log.Printf("WARNING: output is not finished")
+	}
+
+	log.Printf("%d files updated:", len(respItems))
+	for _, item := range respItems {
+		log.Printf("\t%s", item.relPath)
+	}
+
+	for _, item := range respItems {
+		fn := filepath.Join(rootDirs[0], item.relPath)
+		ext := filepath.Ext(fn)
+		fn = fn[:len(fn)-len(ext)] + ".draft" + ext
+
+		ensure(os.MkdirAll(filepath.Dir(fn), 0755))
+		ensure(os.WriteFile(fn, item.content, 0644))
 	}
 
 	// dir := director.New()
