@@ -28,8 +28,6 @@ func main() {
 	log.SetOutput(os.Stderr)
 	log.SetFlags(log.Ltime)
 
-	//env.Var("OPENAI_API_KEY", required, envloader.StringVar(&openAICreds.APIKey), "OpenAI API key")
-
 	var (
 		envFile  string
 		rootDirs []string
@@ -113,7 +111,7 @@ func main() {
 	}
 
 	httpClient := &http.Client{
-		Timeout: 2 * time.Minute,
+		Timeout: 5 * time.Minute,
 	}
 
 	var response string
