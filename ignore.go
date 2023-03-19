@@ -48,6 +48,7 @@ func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 	return false
 }
 
+// loadConfig loads the configuration for a given directory and caches it.
 func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 	conf := ign.dirConfigs[dir]
 	if conf != nil {
@@ -74,6 +75,8 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 	return conf
 }
 
+// match checks if a given path matches any of the patterns in the list and
+// returns the length of the longest matching pattern.
 func match(path string, isDir bool, list []string) int {
 	var score int
 	for _, item := range list {

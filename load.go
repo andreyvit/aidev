@@ -21,15 +21,18 @@ func loadFiles(rootDirs []string, ignore func(path string, isDir bool) bool) (ma
 			if err != nil {
 				return err
 			}
+
+			rel := computeRelPath(fn, rootDir)
+
 			if info.IsDir() {
 				if ignore(fn, true) {
-					ignored = append(ignored, fn+"/")
+					ignored = append(ignored, rel+"/")
 					return filepath.SkipDir
 				}
 				return nil
 			}
 			if ignore(fn, false) {
-				ignored = append(ignored, fn)
+				ignored = append(ignored, rel)
 				return nil
 			}
 
@@ -42,7 +45,7 @@ func loadFiles(rootDirs []string, ignore func(path string, isDir bool) bool) (ma
 			}
 
 			matched = append(matched, &item{
-				relPath: computeRelPath(fn, rootDir),
+				relPath: rel,
 				content: content,
 			})
 			return nil

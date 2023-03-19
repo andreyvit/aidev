@@ -26,18 +26,19 @@ var systemPrompt string
 
 func main() {
 	log.SetOutput(os.Stderr)
-	log.SetFlags(log.Ltime)
+	log.SetFlags(0)
 
 	var (
-		envFile  string
-		rootDirs []string
-		include  []string
-		exclude  []string
-		codeFile string
-		respFile string
-		replay   bool
-		prompt   string
-		model    string = openai.ModelChatGPT4
+		envFile   string
+		rootDirs  []string
+		include   []string
+		exclude   []string
+		unexclude []string
+		codeFile  string
+		respFile  string
+		replay    bool
+		prompt    string
+		model     string = openai.ModelChatGPT4
 	)
 	flag.Usage = usage
 	flag.StringVar(&envFile, "conf", "", "load environment variables from this file")
@@ -48,6 +49,7 @@ func main() {
 	flag.Var((*stringList)(&rootDirs), "d", "add code directory (defaults to ., can specify multiple times)")
 	flag.Var((*stringList)(&include), "i", "include only this glob pattern (can specify multiple times)")
 	flag.Var((*stringList)(&exclude), "x", "exclude this glob pattern (can specify multiple times, in case of conflict with -i longest pattern wins)")
+	flag.Var((*stringList)(&unexclude), "u", "un-exclude this glob pattern (can specify multiple times, in case of conflict always wins over -x/ignore)")
 	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT4}, "gpt4", "use GPT-4")
 	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT4With32k}, "gpt4-32k", "use GPT-4 32k")
 	flag.Var(&choiceFlag[string]{&model, openai.ModelChatGPT35Turbo}, "gpt35", "use GPT 3.5")
@@ -67,8 +69,9 @@ func main() {
 	}
 
 	ign := newIgnorer(&TreeConfig{
-		Includes: include,
-		Excludes: exclude,
+		Includes:   include,
+		Excludes:   exclude,
+		Unexcludes: unexclude,
 	})
 
 	items, ignored := loadFiles(rootDirs, ign.ShouldIgnore)
