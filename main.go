@@ -66,10 +66,10 @@ func main() {
 		rootDirs = []string{"."}
 	}
 
-	ign := &Ignorer{
-		Include: include,
-		Exclude: exclude,
-	}
+	ign := newIgnorer(&TreeConfig{
+		Includes: include,
+		Excludes: exclude,
+	})
 
 	items, ignored := loadFiles(rootDirs, ign.ShouldIgnore)
 	if len(ignored) > 0 {
@@ -159,8 +159,9 @@ func main() {
 
 	for _, item := range respItems {
 		fn := filepath.Join(rootDirs[0], item.relPath)
-		ext := filepath.Ext(fn)
-		fn = fn[:len(fn)-len(ext)] + ".draft" + ext
+		// ext := filepath.Ext(fn)
+		// fn = fn[:len(fn)-len(ext)] + ".draft" + ext
+		fn = fn + ".draft"
 
 		ensure(os.MkdirAll(filepath.Dir(fn), 0755))
 		ensure(os.WriteFile(fn, item.content, 0644))

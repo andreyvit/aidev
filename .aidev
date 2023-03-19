@@ -1,0 +1,8 @@
+ignore LICENSE
+ignore internal
+ignore _data
+ignore *.txt
+ignore go.mod
+
+slice foo
+    only foo*.go

@@ -16,6 +16,7 @@ type item struct {
 func loadFiles(rootDirs []string, ignore func(path string, isDir bool) bool) (matched []*item, ignored []string) {
 	for _, rootDir := range rootDirs {
 		rootDir = strings.TrimSuffix(rootDir, "/")
+		rootDir = must(filepath.Abs(rootDir))
 		ensure(filepath.Walk(rootDir, func(fn string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
