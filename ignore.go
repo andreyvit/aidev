@@ -42,9 +42,9 @@ func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 		}
 	}
 
-	incl := match(name, isDir, conf.Includes)
-	excl := match(name, isDir, conf.Excludes)
-	unex := match(name, isDir, conf.Unexcludes)
+	incl := match(name, dir, isDir, conf.Includes)
+	excl := match(name, dir, isDir, conf.Excludes)
+	unex := match(name, dir, isDir, conf.Unexcludes)
 
 	if len(conf.Includes) > 0 && incl == 0 {
 		return true
@@ -86,7 +86,7 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 
 // match checks if a given path matches any of the patterns in the list and
 // returns the length of the longest matching pattern.
-func match(path string, isDir bool, list []string) int {
+func match(name string, dir string, isDir bool, list []string) int {
 	var score int
 	for _, item := range list {
 		var wantsDir bool
@@ -95,9 +95,18 @@ func match(path string, isDir bool, list []string) int {
 			continue
 		}
 
-		if must(filepath.Match(item, path)) {
-			if len(item) > score {
-				score = len(item)
+		if strings.Contains(item, "/") {
+			relPath := filepath.Join(dir, name)
+			if must(filepath.Match(item, relPath)) {
+				if len(item) > score {
+					score = len(item)
+				}
+			}
+		} else {
+			if must(filepath.Match(item, name)) {
+				if len(item) > score {
+					score = len(item)
+				}
 			}
 		}
 	}
