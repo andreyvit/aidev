@@ -38,14 +38,14 @@ func main() {
 		replay    bool
 		prompt    string
 		model     string = openai.ModelChatGPT4
-		slice     string
+		slices    []string
 	)
 	flag.Usage = usage
 	flag.StringVar(&envFile, "conf", "", "load environment variables from this file")
 	flag.StringVar(&codeFile, "C", "", "file name to save combined code to (- for stdout, copy for clipboard)")
 	flag.StringVar(&prompt, "p", "", "prompt to execute")
 	flag.BoolVar(&replay, "replay", false, "replay response from response file (if any) instead of obtaining new one")
-	flag.StringVar(&slice, "s", "", "specify a slice to use")
+	flag.Var((*stringList)(&slices), "s", "specify a slice to use (can specify multiple times)")
 	flag.Var((*stringList)(&rootDirs), "d", "add code directory (defaults to ., can specify multiple times)")
 	flag.Var((*stringList)(&include), "i", "include only this glob pattern (can specify multiple times)")
 	flag.Var((*stringList)(&exclude), "x", "exclude this glob pattern (can specify multiple times, in case of conflict with -i longest pattern wins)")
@@ -80,7 +80,7 @@ func main() {
 		Includes:   include,
 		Excludes:   exclude,
 		Unexcludes: unexclude,
-	}, slice)
+	}, slices)
 
 	items, ignored := loadFiles(rootDirs, ign.ShouldIgnore)
 	if len(ignored) > 0 {

@@ -7,16 +7,16 @@ import (
 )
 
 type Ignorer struct {
-	overrides     *TreeConfig
-	dirConfigs    map[string]*TreeConfig
-	selectedSlice string
+	overrides  *TreeConfig
+	dirConfigs map[string]*TreeConfig
+	slices     []string
 }
 
-func newIgnorer(overrideConfig *TreeConfig, selectedSlice string) *Ignorer {
+func newIgnorer(overrideConfig *TreeConfig, slices []string) *Ignorer {
 	return &Ignorer{
-		overrides:     overrideConfig,
-		dirConfigs:    make(map[string]*TreeConfig),
-		selectedSlice: selectedSlice,
+		overrides:  overrideConfig,
+		dirConfigs: make(map[string]*TreeConfig),
+		slices:     slices,
 	}
 }
 
@@ -31,10 +31,13 @@ func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 	}
 
 	confs := []*TreeConfig{builtinConfig}
-	for c := ign.loadConfig(dir); c != nil; c = c.parent {
+	dirConfig := ign.loadConfig(dir)
+	for c := dirConfig; c != nil; c = c.parent {
 		confs = append(confs, c)
-		if ign.selectedSlice != "" {
-			if sliceConf, ok := c.Slices[ign.selectedSlice]; ok {
+	}
+	for _, slice := range ign.slices {
+		for c := dirConfig; c != nil; c = c.parent {
+			if sliceConf := c.Slices[slice]; sliceConf != nil {
 				confs = append(confs, sliceConf)
 			}
 		}
