@@ -63,7 +63,7 @@ func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 		}
 	}
 
-	log.Printf("checking: %s (incl = %d, excl = %d, unex = %d, hasinc = %v)", path, incl, excl, unex, hasIncludes)
+	// log.Printf("checking: %s (incl = %d, excl = %d, unex = %d, hasinc = %v)", path, incl, excl, unex, hasIncludes)
 	if !isDir && hasIncludes && incl == 0 {
 		return true
 	}
