@@ -4,7 +4,7 @@ ignore _data
 ignore *.txt
 ignore go.mod
 
-slice configs
+slice trimmed
     ignore parse.go
     ignore load.go
     ignore util.go
@@ -15,4 +15,12 @@ slice main
     ignore util.go
 
 slice ignorer
-    only README.md ignore*.go .aidev
+    only README.md
+    only .aidev
+    only ignore*.go
+
+slice ignorer-plus
+    only README.md
+    only .aidev
+    only ignore*.go
+    only treeconf.go
