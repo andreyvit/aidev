@@ -104,6 +104,9 @@ func main() {
 	opt.MaxTokens = 2048
 	opt.Temperature = 0.7
 
+	limit := openai.MaxTokens(opt.Model)
+	log.Printf("Code tokens: %d, max for %s: %d.", openai.TokenCount(code, opt.Model), opt.Model, limit)
+
 	if prompt == "" {
 		fmt.Fprintf(os.Stderr, "Prompt? (end with EOF)\n")
 		prompt = strings.TrimSpace(string(must(io.ReadAll(os.Stdin))))
@@ -119,7 +122,6 @@ func main() {
 	}
 
 	tokens := openai.ChatTokenCount(chat, opt.Model)
-	limit := openai.MaxTokens(opt.Model)
 	log.Printf("Prompt tokens: %d, with completions: %d, max for %s: %d.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
 	if tokens+opt.MaxTokens > limit {
 		log.Printf("WARNING: prompt exceeds %s capacity.", opt.Model)
