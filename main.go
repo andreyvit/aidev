@@ -114,6 +114,10 @@ func main() {
 	if prompt == "" {
 		fmt.Fprintf(os.Stderr, "Prompt? (end with EOF)\n")
 		prompt = strings.TrimSpace(string(must(io.ReadAll(os.Stdin))))
+		if prompt == "" {
+			log.Printf("Empty prompt, nothing to do.")
+			os.Exit(0)
+		}
 	}
 
 	httpClient := &http.Client{
