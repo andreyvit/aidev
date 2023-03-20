@@ -103,6 +103,15 @@ func main() {
 	opt.MaxTokens = 2048
 	opt.Temperature = 0.7
 
+	if prompt == "" {
+		fmt.Fprintf(os.Stderr, "Prompt? (end with EOF)\n")
+		prompt = strings.TrimSpace(string(must(io.ReadAll(os.Stdin))))
+		if prompt == "" {
+			log.Printf("Empty prompt, nothing to do.")
+			os.Exit(0)
+		}
+	}
+
 	chat := []openai.Msg{
 		openai.SystemMsg(systemPrompt),
 		openai.UserMsg(fmt.Sprintf("%s\n\n%s", strings.TrimSpace(code), strings.TrimSpace(prompt))),
@@ -114,15 +123,6 @@ func main() {
 	if tokens+opt.MaxTokens > limit {
 		log.Printf("WARNING: prompt exceeds %s capacity.", opt.Model)
 		// os.Exit(1)
-	}
-
-	if prompt == "" {
-		fmt.Fprintf(os.Stderr, "Prompt? (end with EOF)\n")
-		prompt = strings.TrimSpace(string(must(io.ReadAll(os.Stdin))))
-		if prompt == "" {
-			log.Printf("Empty prompt, nothing to do.")
-			os.Exit(0)
-		}
 	}
 
 	httpClient := &http.Client{
