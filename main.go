@@ -175,6 +175,7 @@ func main() {
 
 			cost := openai.Cost(usage.PromptTokens, usage.CompletionTokens, opt.Model)
 			log.Printf("OpenAI %s time: %.0f sec, cost: %v (prompt = %d [vs estimated %d], completion = %d)", opt.Model, elapsed.Seconds(), cost, usage.PromptTokens, tokens, usage.CompletionTokens)
+			break
 		}
 	}
 
