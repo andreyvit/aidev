@@ -95,7 +95,7 @@ func main() {
 
 	opt := openai.DefaultChatOptions()
 	opt.Model = model
-	opt.MaxTokens = 512
+	opt.MaxTokens = 2048
 	opt.Temperature = 0.7
 
 	chat := []openai.Msg{
