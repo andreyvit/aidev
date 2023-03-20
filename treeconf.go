@@ -20,6 +20,17 @@ func (conf *TreeConfig) Append(src *TreeConfig) {
 	conf.Includes = append(conf.Includes, src.Includes...)
 	conf.Excludes = append(conf.Excludes, src.Excludes...)
 	conf.Unexcludes = append(conf.Unexcludes, src.Unexcludes...)
+	for k, v := range src.Slices {
+		if conf.Slices == nil {
+			conf.Slices = make(map[string]*TreeConfig)
+		}
+		c := conf.Slices[k]
+		if c == nil {
+			c = &TreeConfig{}
+			conf.Slices[k] = c
+		}
+		c.Append(v)
+	}
 }
 
 func loadTreeConfig(fn string) (*TreeConfig, error) {
