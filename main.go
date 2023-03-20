@@ -16,8 +16,6 @@ import (
 	"github.com/andreyvit/openai"
 )
 
-// You are an AI programming assistant. User will send all files from a Git repository, separated by =#=#= headers, followed by a change request. Implement the requested change and output the modified files in the same format.
-
 var (
 	openAICreds openai.Credentials
 )
