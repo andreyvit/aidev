@@ -4,14 +4,24 @@ AI developer: asks GPT-4 to modify an entire folder full of files.
 
 **Warning**: This README and even parts of the code were written by aidev itself, via GPT-4. This is a meta-experiment. Always review the generated code before using it in your projects.
 
-## Workflow
+## Usage
+
+You can invoke the program with no parameters and provide the prompt on stdin:
+
+```
+aidev
+```
+
+When prompted, enter your desired change request and end with EOF (Ctrl+D on Unix-like systems or Ctrl+Z on Windows).
 
 The general workflow of using aidev involves the following steps:
 
-1. Specify the directories containing the code you want to modify using the `-d` option.
-2. Provide a prompt describing the changes you want to make using the `-p` option.
-3. The AI will process the request and generate modified versions of the relevant files.
-4. Modified files will have a ".draft" extension added to their original file names. Review these files and, if the changes are satisfactory, replace the original files with the modified versions.
+1. (Optional) Specify the directories containing the code you want to modify using the `-d` option. By default, aidev will use the current directory.
+2. Define slices in your `.aidev` configuration file to include or exclude specific parts of your codebase.
+3. Provide a prompt describing the changes you want to make using the `-p` option.
+4. Select a slice to use with the `-s` option.
+5. The AI will process the request and generate modified versions of the relevant files.
+6. Modified files will have a ".draft" extension added to their original file names. Review these files and, if the changes are satisfactory, replace the original files with the modified versions.
 
 Remember to always review the generated ".draft" files before replacing the original files to ensure the changes made by the AI are correct and meet your requirements.
 
@@ -123,7 +133,7 @@ slice foo
 aidev -p "Add a new function called 'helloWorld' that prints 'Hello, World!'"
 ```
 
-### Specify directories to include
+### Specify directories to include (optional)
 
 ```
 aidev -d src -d lib -p "Add a new function called 'helloWorld' that prints 'Hello, World!'"
