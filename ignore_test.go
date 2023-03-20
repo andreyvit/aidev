@@ -68,6 +68,13 @@ func TestShouldIgnore(t *testing.T) {
 			isDir:    false,
 			expected: false,
 		},
+		{
+			name: "ignore .draft files",
+			ignorer: newIgnorer(&TreeConfig{}, ""),
+			path:     "main.draft.go",
+			isDir:    false,
+			expected: true,
+		},
 		// Add more test cases
 	}
 
