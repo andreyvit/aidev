@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -136,34 +137,43 @@ func main() {
 	}
 
 	if response == "" {
-		log.Printf("Talking to %s...", opt.Model)
-		if promptFile != "" {
-			ensure(saveText(promptFile, chat[0].Content+"\n\n=====\n\n"+chat[1].Content))
-		}
-		start := time.Now()
-		msg, usage, err := openai.Chat(context.Background(), chat, openai.Options{
-			Model:            model,
-			MaxTokens:        2048,
-			Temperature:      0.7,
-			TopP:             0,
-			N:                0,
-			BestOf:           0,
-			Stop:             []string{},
-			PresencePenalty:  0,
-			FrequencyPenalty: 0,
-		}, httpClient, openAICreds)
-		if err != nil {
-			log.Fatalf("** %v", err)
-		}
-		elapsed := time.Since(start)
+		for {
+			log.Printf("Talking to %s...", opt.Model)
+			if promptFile != "" {
+				ensure(saveText(promptFile, chat[0].Content+"\n\n=====\n\n"+chat[1].Content))
+			}
+			start := time.Now()
+			msg, usage, err := openai.Chat(context.Background(), chat, openai.Options{
+				Model:            model,
+				MaxTokens:        2048,
+				Temperature:      0.7,
+				TopP:             0,
+				N:                0,
+				BestOf:           0,
+				Stop:             []string{},
+				PresencePenalty:  0,
+				FrequencyPenalty: 0,
+			}, httpClient, openAICreds)
+			if err != nil {
+				log.Printf("** ERROR: %v", err)
+				var e *openai.Error
+				if errors.As(err, &e) && retriable(e) {
+					log.Println("Will retry in 5 seconds...")
+					time.Sleep(5 * time.Second)
+					continue
+				}
+				os.Exit(1)
+			}
+			elapsed := time.Since(start)
 
-		response = msg[0].Content
-		if respFile != "" {
-			saveText(respFile, response)
-		}
+			response = msg[0].Content
+			if respFile != "" {
+				saveText(respFile, response)
+			}
 
-		cost := openai.Cost(usage.PromptTokens, usage.CompletionTokens, opt.Model)
-		log.Printf("OpenAI %s time: %.0f sec, cost: %v (prompt = %d [vs estimated %d], completion = %d)", opt.Model, elapsed.Seconds(), cost, usage.PromptTokens, tokens, usage.CompletionTokens)
+			cost := openai.Cost(usage.PromptTokens, usage.CompletionTokens, opt.Model)
+			log.Printf("OpenAI %s time: %.0f sec, cost: %v (prompt = %d [vs estimated %d], completion = %d)", opt.Model, elapsed.Seconds(), cost, usage.PromptTokens, tokens, usage.CompletionTokens)
+		}
 	}
 
 	log.Printf("len(response) = %d", len(response))
@@ -208,4 +218,8 @@ func usage() {
 	flag.PrintDefaults()
 
 	fmt.Printf("\nMost options are set via environment variables. Run %s -print-env for a list.\n", base)
+}
+
+func retriable(err *openai.Error) bool {
+	return err.IsNetwork || err.StatusCode == http.StatusTooManyRequests || (err.StatusCode >= 500 && err.StatusCode <= 599)
 }
