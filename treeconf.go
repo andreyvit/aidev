@@ -10,7 +10,7 @@ type TreeConfig struct {
 	Includes   []string
 	Excludes   []string
 	Unexcludes []string
-	// IsBuiltIn bool
+	Slices     map[string]*TreeConfig
 }
 
 func (conf *TreeConfig) Append(src *TreeConfig) {
@@ -32,7 +32,9 @@ func loadTreeConfig(fn string) (*TreeConfig, error) {
 	}
 
 	lines := strings.Split(string(raw), "\n")
-	conf := new(TreeConfig)
+	conf := &TreeConfig{
+		Slices: make(map[string]*TreeConfig),
+	}
 
 	var sliceName string
 	for lno, line := range lines {
@@ -49,30 +51,34 @@ func loadTreeConfig(fn string) (*TreeConfig, error) {
 			if len(patterns) == 0 {
 				return nil, fmt.Errorf("%s:%d: empty %s directive", fn, lno+1, directive)
 			}
-			if sliceName != "" {
-				break
+			if sliceName == "" {
+				conf.Includes = append(conf.Includes, patterns...)
+			} else {
+				conf.Slices[sliceName].Includes = append(conf.Slices[sliceName].Includes, patterns...)
 			}
-			conf.Includes = append(conf.Includes, patterns...)
 		case "ignore":
 			patterns := strings.Fields(args)
 			if len(patterns) == 0 {
 				return nil, fmt.Errorf("%s:%d: empty %s directive", fn, lno+1, directive)
 			}
-			if sliceName != "" {
-				break
+			if sliceName == "" {
+				conf.Excludes = append(conf.Excludes, patterns...)
+			} else {
+				conf.Slices[sliceName].Excludes = append(conf.Slices[sliceName].Excludes, patterns...)
 			}
-			conf.Excludes = append(conf.Excludes, patterns...)
 		case "unignore":
 			patterns := strings.Fields(args)
 			if len(patterns) == 0 {
 				return nil, fmt.Errorf("%s:%d: empty %s directive", fn, lno+1, directive)
 			}
-			if sliceName != "" {
-				break
+			if sliceName == "" {
+				conf.Unexcludes = append(conf.Unexcludes, patterns...)
+			} else {
+				conf.Slices[sliceName].Unexcludes = append(conf.Slices[sliceName].Unexcludes, patterns...)
 			}
-			conf.Unexcludes = append(conf.Unexcludes, patterns...)
 		case "slice":
 			sliceName = args
+			conf.Slices[sliceName] = &TreeConfig{}
 		default:
 			return nil, fmt.Errorf("%s:%d: unknown directive %s", fn, lno+1, directive)
 		}
