@@ -77,6 +77,21 @@ slice backend
 
 The `*.log` pattern will be ignored globally, while the `frontend` and `backend` slices will still apply their specific include patterns.
 
+## Environment Variables
+
+The following environment variables can be set to configure aidev:
+
+### Required
+
+- `OPENAI_API_KEY`: Your OpenAI API key. This is required to authenticate with the OpenAI API.
+
+### Optional
+
+- `OPENAI_ORG`: Your OpenAI organization ID. This is optional and used for billing purposes.
+- `AIDEV_SAVE_CODE`: File name to save combined code to. Defaults to an empty string.
+- `AIDEV_SAVE_RESP`: File name to save the AI response to. Defaults to an empty string.
+- `AIDEV_SAVE_PROMPT`: File name to save the prompt to. Defaults to an empty string.
+
 ## Usage
 
 ```
