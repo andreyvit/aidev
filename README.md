@@ -2,6 +2,8 @@
 
 AI developer: asks GPT-4 to modify an entire folder full of files.
 
+**Warning**: This README and even parts of the code were written by aidev itself, via GPT-4. This is a meta-experiment. Always review the generated code before using it in your projects.
+
 ## Workflow
 
 The general workflow of using aidev involves the following steps:

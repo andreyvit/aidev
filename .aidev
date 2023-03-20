@@ -28,3 +28,9 @@ slice ignorer-plus
 slice test
     unignore internal
     only internal/*/*
+
+slice readme
+    only README.md
+    only .aidev
+    only main.go
+
