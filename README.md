@@ -13,6 +13,8 @@ The general workflow of using aidev involves the following steps:
 
 Remember to always review the generated ".draft" files before replacing the original files to ensure the changes made by the AI are correct and meet your requirements.
 
+By default, aidev will ignore any files with a ".draft" extension or containing ".draft." in their name.
+
 ## Slicing
 
 Slicing allows you to include or exclude specific parts of your codebase when using aidev. By defining slices in your `.aidev` configuration file, you can control which files or directories are considered by the AI when processing your request.
