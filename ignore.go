@@ -71,7 +71,7 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 	}
 
 	parent := filepath.Dir(dir)
-	if dir == "/" || parent == "" {
+	if dir == "/" || parent == "" || parent == dir {
 	} else {
 		combined := &TreeConfig{}
 		combined.Append(ign.loadConfig(parent))
