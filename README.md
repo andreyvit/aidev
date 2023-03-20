@@ -13,6 +13,65 @@ The general workflow of using aidev involves the following steps:
 
 Remember to always review the generated ".draft" files before replacing the original files to ensure the changes made by the AI are correct and meet your requirements.
 
+## Slicing
+
+Slicing allows you to include or exclude specific parts of your codebase when using aidev. By defining slices in your `.aidev` configuration file, you can control which files or directories are considered by the AI when processing your request.
+
+To use slicing, add a `slice` directive followed by a unique name in your `.aidev` file. Then, use the `only`, `ignore`, and `unignore` directives within the slice to specify the include and exclude patterns for that slice. To apply a specific slice when running aidev, use the `-s` option followed by the slice name.
+
+### Examples
+
+#### Basic slicing
+
+In your `.aidev` file:
+
+```
+slice frontend
+    only frontend/*.js
+    only frontend/*.css
+```
+
+To use the `frontend` slice:
+
+```
+aidev -s frontend -p "Add a new function called 'helloWorld' that prints 'Hello, World!'"
+```
+
+#### Multiple slices
+
+In your `.aidev` file:
+
+```
+slice frontend
+    only frontend/*.js
+    only frontend/*.css
+
+slice backend
+    only backend/*.go
+```
+
+To use the `backend` slice:
+
+```
+aidev -s backend -p "Add a new function called 'helloWorld' that prints 'Hello, World!'"
+```
+
+#### Combining slices with global patterns
+
+In your `.aidev` file:
+
+```
+ignore *.log
+
+slice frontend
+    only frontend/*.js
+    only frontend/*.css
+
+slice backend
+    only backend/*.go
+```
+
+The `*.log` pattern will be ignored globally, while the `frontend` and `backend` slices will still apply their specific include patterns.
 
 ## Usage
 
