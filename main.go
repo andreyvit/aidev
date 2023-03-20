@@ -106,8 +106,9 @@ func main() {
 
 	tokens := openai.ChatTokenCount(chat, opt.Model)
 	limit := openai.MaxTokens(opt.Model)
+	log.Printf("Prompt tokens: %d, with completions: %d, max for %s: %d.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
 	if tokens+opt.MaxTokens > limit {
-		log.Printf("WARNING: prompt resulted in %d tokens, %d tokens including completion, max for %s is %d tokens.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
+		log.Printf("WARNING: prompt exceeds %s capacity.", opt.Model)
 		// os.Exit(1)
 	}
 
