@@ -27,7 +27,7 @@ func TestMatch(t *testing.T) {
 			path:     "frontend/app.js",
 			dir:      "frontend",
 			isDir:    false,
-			expected: 12,
+			expected: 13,
 		},
 		// Add more test cases
 	}
@@ -69,8 +69,8 @@ func TestShouldIgnore(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "ignore .draft files",
-			ignorer: newIgnorer(&TreeConfig{}, ""),
+			name:     "ignore .draft files",
+			ignorer:  newIgnorer(&TreeConfig{}, ""),
 			path:     "main.draft.go",
 			isDir:    false,
 			expected: true,

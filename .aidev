@@ -24,3 +24,7 @@ slice ignorer-plus
     only .aidev
     only ignore*.go
     only treeconf.go
+
+slice test
+    unignore internal
+    only internal/*/*

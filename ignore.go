@@ -30,25 +30,41 @@ func (ign *Ignorer) ShouldIgnore(path string, isDir bool) bool {
 		return true
 	}
 
-	conf := &TreeConfig{}
-	conf.Append(builtinConfig)
-	conf.Append(ign.loadConfig(dir))
-	conf.Append(ign.overrides)
+	confs := []*TreeConfig{builtinConfig}
+	for c := ign.loadConfig(dir); c != nil; c = c.parent {
+		confs = append(confs, c)
+		if ign.selectedSlice != "" {
+			if sliceConf, ok := c.Slices[ign.selectedSlice]; ok {
+				confs = append(confs, sliceConf)
+			}
+		}
+	}
+	confs = append(confs, ign.overrides)
+	// log.Printf("confs: %s", must(json.MarshalIndent(confs, "", "  ")))
 
-	if ign.selectedSlice != "" {
-		sliceConf, ok := conf.Slices[ign.selectedSlice]
-		if ok {
-			conf.Append(sliceConf)
+	var incl, excl, unex int
+	for _, conf := range confs {
+		var relPath string
+		if conf.Dir != "" {
+			relPath = must(filepath.Rel(conf.Dir, path))
+		}
+		incl = max(incl, match(name, relPath, isDir, conf.Includes))
+		excl = max(excl, match(name, relPath, isDir, conf.Excludes))
+		unex = max(unex, match(name, relPath, isDir, conf.Unexcludes))
+	}
+
+	var hasIncludes bool
+	for _, conf := range confs {
+		if len(conf.Includes) > 0 {
+			hasIncludes = true
 		}
 	}
 
-	incl := match(name, dir, isDir, conf.Includes)
-	excl := match(name, dir, isDir, conf.Excludes)
-	unex := match(name, dir, isDir, conf.Unexcludes)
-
-	if len(conf.Includes) > 0 && incl == 0 {
+	log.Printf("checking: %s (incl = %d, excl = %d, unex = %d, hasinc = %v)", path, incl, excl, unex, hasIncludes)
+	if !isDir && hasIncludes && incl == 0 {
 		return true
 	}
+
 	if excl > 0 && excl >= incl && unex == 0 {
 		// in case of -i and -x conflict, longest pattern wins
 		return true
@@ -65,7 +81,7 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 	}
 
 	// log.Printf("loadConfig loading for %s", dir)
-	conf, err := loadTreeConfig(filepath.Join(dir, ".aidev"))
+	conf, err := loadTreeConfig(dir)
 	if err != nil {
 		log.Fatalf("** %v", err)
 	}
@@ -73,10 +89,13 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 	parent := filepath.Dir(dir)
 	if dir == "/" || parent == "" || parent == dir {
 	} else {
-		combined := &TreeConfig{}
-		combined.Append(ign.loadConfig(parent))
-		combined.Append(conf)
-		conf = combined
+		parentConf := ign.loadConfig(parent)
+		if parentConf != nil {
+			if conf == nil {
+				conf = &TreeConfig{}
+			}
+			conf.parent = ign.loadConfig(parent)
+		}
 	}
 
 	ign.dirConfigs[dir] = conf
@@ -86,7 +105,7 @@ func (ign *Ignorer) loadConfig(dir string) *TreeConfig {
 
 // match checks if a given path matches any of the patterns in the list and
 // returns the length of the longest matching pattern.
-func match(name string, dir string, isDir bool, list []string) int {
+func match(name string, relPath string, isDir bool, list []string) int {
 	var score int
 	for _, item := range list {
 		var wantsDir bool
@@ -96,8 +115,7 @@ func match(name string, dir string, isDir bool, list []string) int {
 		}
 
 		if strings.Contains(item, "/") {
-			relPath := filepath.Join(dir, name)
-			if must(filepath.Match(item, relPath)) {
+			if relPath != "" && must(filepath.Match(item, relPath)) {
 				if len(item) > score {
 					score = len(item)
 				}

@@ -3,37 +3,22 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 type TreeConfig struct {
+	Dir        string
 	Includes   []string
 	Excludes   []string
 	Unexcludes []string
 	Slices     map[string]*TreeConfig
+	parent     *TreeConfig
 }
 
-func (conf *TreeConfig) Append(src *TreeConfig) {
-	if src == nil {
-		return
-	}
-	conf.Includes = append(conf.Includes, src.Includes...)
-	conf.Excludes = append(conf.Excludes, src.Excludes...)
-	conf.Unexcludes = append(conf.Unexcludes, src.Unexcludes...)
-	for k, v := range src.Slices {
-		if conf.Slices == nil {
-			conf.Slices = make(map[string]*TreeConfig)
-		}
-		c := conf.Slices[k]
-		if c == nil {
-			c = &TreeConfig{}
-			conf.Slices[k] = c
-		}
-		c.Append(v)
-	}
-}
+func loadTreeConfig(dir string) (*TreeConfig, error) {
+	fn := filepath.Join(dir, ".aidev")
 
-func loadTreeConfig(fn string) (*TreeConfig, error) {
 	raw, err := os.ReadFile(fn)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -44,6 +29,7 @@ func loadTreeConfig(fn string) (*TreeConfig, error) {
 
 	lines := strings.Split(string(raw), "\n")
 	conf := &TreeConfig{
+		Dir:    dir,
 		Slices: make(map[string]*TreeConfig),
 	}
 
@@ -89,7 +75,9 @@ func loadTreeConfig(fn string) (*TreeConfig, error) {
 			}
 		case "slice":
 			sliceName = args
-			conf.Slices[sliceName] = &TreeConfig{}
+			conf.Slices[sliceName] = &TreeConfig{
+				Dir: dir,
+			}
 		default:
 			return nil, fmt.Errorf("%s:%d: unknown directive %s", fn, lno+1, directive)
 		}

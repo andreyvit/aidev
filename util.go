@@ -133,3 +133,10 @@ func (f *choiceFlag[T]) Set(str string) error {
 	*f.ptr = f.value
 	return nil
 }
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
