@@ -75,6 +75,15 @@ func TestShouldIgnore(t *testing.T) {
 			isDir:    false,
 			expected: true,
 		},
+		{
+			name: "ignore directory",
+			ignorer: newIgnorer(&TreeConfig{
+				Excludes: []string{"ignored_directory/"},
+			}, ""),
+			path:     "ignored_directory",
+			isDir:    true,
+			expected: true,
+		},
 		// Add more test cases
 	}
 
