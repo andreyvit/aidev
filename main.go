@@ -34,7 +34,6 @@ func main() {
 		exclude   []string
 		unexclude []string
 		codeFile  string
-		respFile  string
 		replay    bool
 		prompt    string
 		model     string = openai.ModelChatGPT4
@@ -44,7 +43,6 @@ func main() {
 	flag.StringVar(&envFile, "conf", "", "load environment variables from this file")
 	flag.StringVar(&codeFile, "C", "", "file name to save combined code to (- for stdout, copy for clipboard)")
 	flag.StringVar(&prompt, "p", "", "prompt to execute")
-	flag.StringVar(&respFile, "R", "", "file name ot save ChatGPT response to (- for stdout, copy for clipboard)")
 	flag.BoolVar(&replay, "replay", false, "replay response from response file (if any) instead of obtaining new one")
 	flag.StringVar(&slice, "s", "", "specify a slice to use")
 	flag.Var((*stringList)(&rootDirs), "d", "add code directory (defaults to ., can specify multiple times)")
@@ -59,6 +57,14 @@ func main() {
 	if envFile != "" && envFile != "none" {
 		loadEnv(envFile)
 	}
+
+	if codeFile == "" {
+		codeFile = os.Getenv("AIDEV_SAVE_CODE")
+	}
+	var (
+		respFile   string = os.Getenv("AIDEV_SAVE_RESP")
+		promptFile string = os.Getenv("AIDEV_SAVE_PROMPT")
+	)
 
 	openAICreds = openai.Credentials{
 		APIKey:         needEnv("OPENAI_API_KEY"),
@@ -131,6 +137,9 @@ func main() {
 
 	if response == "" {
 		log.Printf("Talking to %s...", opt.Model)
+		if promptFile != "" {
+			ensure(saveText(promptFile, chat[0].Content+"\n\n=====\n\n"+chat[1].Content))
+		}
 		start := time.Now()
 		msg, usage, err := openai.Chat(context.Background(), chat, openai.Options{
 			Model:            model,
