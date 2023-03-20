@@ -127,6 +127,8 @@ func main() {
 	}
 
 	if response == "" {
+		log.Printf("Talking to %s...", opt.Model)
+		start := time.Now()
 		msg, usage, err := openai.Chat(context.Background(), chat, openai.Options{
 			Model:            model,
 			MaxTokens:        2048,
@@ -141,6 +143,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("** %v", err)
 		}
+		elapsed := time.Since(start)
 
 		response = msg[0].Content
 		if respFile != "" {
@@ -148,7 +151,7 @@ func main() {
 		}
 
 		cost := openai.Cost(usage.PromptTokens, usage.CompletionTokens, opt.Model)
-		log.Printf("OpenAI cost: %v (prompt = %d [vs estimated %d], completion = %d)", cost, usage.PromptTokens, tokens, usage.CompletionTokens)
+		log.Printf("OpenAI %s time: %.0f sec, cost: %v (prompt = %d [vs estimated %d], completion = %d)", opt.Model, elapsed.Seconds(), cost, usage.PromptTokens, tokens, usage.CompletionTokens)
 	}
 
 	log.Printf("len(response) = %d", len(response))
