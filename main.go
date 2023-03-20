@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	_ "embed"
 	"flag"
@@ -111,8 +112,18 @@ func main() {
 	}
 
 	if prompt == "" {
-		log.Printf("no prompt specified, nothing to do")
-		os.Exit(0)
+		log.Printf("no prompt specified, reading from stdin")
+		reader := bufio.NewReader(os.Stdin)
+		var lines []string
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			lines = append(lines, line)
+		}
+		prompt = strings.Join(lines, "")
+		prompt = strings.TrimSpace(prompt)
 	}
 
 	httpClient := &http.Client{
