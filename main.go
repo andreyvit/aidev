@@ -106,8 +106,8 @@ func main() {
 	tokens := openai.ChatTokenCount(chat, opt.Model)
 	limit := openai.MaxTokens(opt.Model)
 	if tokens+opt.MaxTokens > limit {
-		log.Printf("** prompt resulted in %d tokens, %d tokens including completion, max for %s is %d tokens.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
-		os.Exit(1)
+		log.Printf("WARNING: prompt resulted in %d tokens, %d tokens including completion, max for %s is %d tokens.", tokens, tokens+opt.MaxTokens, opt.Model, limit)
+		// os.Exit(1)
 	}
 
 	if prompt == "" {
