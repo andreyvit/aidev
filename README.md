@@ -2,6 +2,18 @@
 
 AI developer: asks GPT-4 to modify an entire folder full of files.
 
+## Workflow
+
+The general workflow of using aidev involves the following steps:
+
+1. Specify the directories containing the code you want to modify using the `-d` option.
+2. Provide a prompt describing the changes you want to make using the `-p` option.
+3. The AI will process the request and generate modified versions of the relevant files.
+4. Modified files will have a ".draft" extension added to their original file names. Review these files and, if the changes are satisfactory, replace the original files with the modified versions.
+
+Remember to always review the generated ".draft" files before replacing the original files to ensure the changes made by the AI are correct and meet your requirements.
+
+
 ## Usage
 
 ```
