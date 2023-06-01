@@ -118,7 +118,7 @@ type choiceFlag[T comparable] struct {
 }
 
 func (f *choiceFlag[T]) String() string {
-	if *f.ptr == f.value {
+	if f.ptr != nil && *f.ptr == f.value {
 		return "true"
 	} else {
 		return ""
